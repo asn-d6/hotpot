@@ -1,0 +1,65 @@
+Description:
+
+Hot pot is a honeypot-like application that attempts to capture
+Chinese GFW probers [0]. Specifically, it's an SSL server that logs
+what its clients send to it.
+
+Instructions:
+
+* Create a very sketchy-looking x509 certificate, so that the GFW will
+  surely suspect connections to it.
+* Fire up hot pot on a non-Chinese host:
+  $ hotpot.py --port=443 --ssl_stuff=server.pem --log=chinese.log
+* Now, from inside China, connect to the above hose using SSL, so that
+  GFW suspects hot pot:
+  $ openssl s_client -connect <hot pot host>:443
+* Wait till the probing happens and look at the 'chinese.log' file.
+
+Cooking tips:
+
+* Hot pot sends dummy data to its clients, to see what they will do.
+  If you don't like this, use --laconic.
+* If you don't want flooding log files, use --only_ip_addresses.
+* You can put the s_client command in a cron job, so that you
+  continuously harvest probers' addresses.
+
+Danger:
+
+Repeatedly calling s_client towards the hot pot is very active and
+fingerprintable. If you really care about your hosts not being
+discovered, you shouldn't use hot pot.
+
+Presentation:
+
+The logging file format is the following:
+
+"""
+2011-10-19 12:32:36,761: 65.255.45.253:59464
+2011-10-19 12:32:36,761: | '\x16\x03\x01\x00\xcd\x01\x00\x00\xc9\x03\x01N\xc8\x12c\x95\xd0\xe4"<\xe9)\x19\x16\xb5\xfaVN\xfb1\x85\x16c[\x8d\x07\xc4\xec\x13\xc0#tE\x00\x00\\\xc0\x14\xc0\n\x009\x008\x00\x88\x00\x87\xc0\x0f\xc0\x05\x005\x00\x84\xc0\x12\xc0\x08\x00\x16\x00\x13\xc0\r\xc0\x03\x00\n\xc0\x13\xc0\t\x003\x002\x00\x9a\x00\x99\x00E\x00D\xc0\x0e\xc0\x04\x00/\x00\x96\x00A\x00\x07\xc0\x11\xc0\x07\xc0\x0c\xc0\x02\x00\x05\x00\x04\x00\x15\x00\x12\x00\t\x00\x14\x00\x11\x00\x08\x00\x06\x00\x03\x00\xff\x01\x00\x00D\x00\x0b\x00\x04\x03\x00\x01\x02\x00\n\x004\x002\x00\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\t\x00\n\x00\x0b\x00\x0c\x00\r\x00\x0e\x00\x0f\x00\x10\x00\x11\x00\x12\x00\x13\x00\x14\x00\x15\x00\x16\x00\x17\x00\x18\x00\x19\x00#\x00\x00'
+2011-10-19 12:32:36,762: < 'data data data data data\n'
+2011-10-19 12:32:36,762: > '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+2011-10-19 12:32:36,763: < 'even more data even more data even more data\n'
+2011-10-19 12:32:36,763: > '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+"""
+
+This is log output from a client who completed the SSL handshake and
+sent us some application-layer data.
+The data following '|' is the data provided by the client before the
+SSL handshake (in this case it was the ClientHello packet).
+The data following '<' is the application-layer data the client sent us.
+The data following '>' is the application-layer data we sent to the client.
+
+"""
+2009-05-19 11:05:42,892: 65.255.45.253:4444
+2009-05-19 11:05:42,893: | 'data data data data\n'
+"""
+
+This is log output from a client who was never interested in
+completing the SSL handshake. The client sent 'data data data data'
+and closed the connection.
+
+[0]: http://www.nsc.liu.se/~nixon/sshprobes.html
+https://trac.torproject.org/projects/tor/ticket/4185
+
+[1]: When a client sends application-layer traffic, the hot pot
+replies with a random amount of dummy data (\x00 bytes).
