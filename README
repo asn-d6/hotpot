@@ -6,13 +6,13 @@ what its clients send to it.
 
 Instructions:
 
-* Create a very sketchy-looking x509 certificate, so that the GFW will
-  surely suspect connections to it.
 * Fire up hot pot on a non-Chinese host:
-  $ hotpot.py --port=443 --ssl_stuff=server.pem --log=chinese.log
-* Now, from inside China, connect to the above hose using SSL, so that
-  GFW suspects hot pot:
+  $ hotpot.py --port=443 --ssl_stuff=example.pem --log=chinese.log
+
+* Now, from inside China, connect to the above host using SSL. The
+  sketchy certificate should provoke GFW to probe you:
   $ openssl s_client -connect <hot pot host>:443
+
 * Wait till the probing happens and look at the 'chinese.log' file.
 
 Cooking tips:
@@ -22,6 +22,9 @@ Cooking tips:
 * If you don't want flooding log files, use --only_ip_addresses.
 * You can put the s_client command in a cron job, so that you
   continuously harvest probers' addresses.
+* The 'example.pem' file is an example Tor certificate along with its
+  private key. You can also create your own certificates using OpenSSL
+  or your favorite library.
 
 Danger:
 
